@@ -1,207 +1,78 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FIKA – Importation V2 vers Firebase</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FIKA Gestion V3</title>
 <style>
-:root{--navy:#10243a;--blue:#1769aa;--green:#087f5b;--red:#b42318;--bg:#f2f6fa;--line:#dce5ed}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#203447;font:16px Arial,sans-serif}
-header{background:linear-gradient(120deg,var(--navy),var(--blue));color:white;padding:24px}
-main{max-width:850px;margin:24px auto;padding:0 15px}.card{background:white;padding:20px;border:1px solid var(--line);border-radius:13px;margin-bottom:17px}
-h1{margin:0;font-size:26px}h2{color:var(--navy);font-size:21px}
-label{display:block;font-weight:bold;margin:12px 0 6px}input{width:100%;padding:12px;border:1px solid #cbd8e3;border-radius:8px;font-size:16px}
-button{border:0;border-radius:8px;padding:12px 17px;font-weight:bold;cursor:pointer;margin:10px 8px 0 0}
-.primary{background:var(--blue);color:white}.secondary{background:#eaf1f7;color:var(--navy)}button:disabled{opacity:.5;cursor:not-allowed}
-.notice{background:#fff5df;border-left:4px solid #e6a23c;padding:13px;border-radius:6px;margin:12px 0}
-.ok{color:var(--green);font-weight:bold}.err{color:var(--red);font-weight:bold}
-#log{white-space:pre-wrap;background:#101d2b;color:#e8f0f8;padding:14px;border-radius:8px;min-height:70px;overflow-wrap:anywhere}
-small{color:#65788a}.hidden{display:none}.counts{line-height:1.8}
+:root{--navy:#10243a;--blue:#1769aa;--teal:#078b82;--gold:#e6a23c;--bg:#f2f6fa;--red:#c0392b;--text:#203447;--line:#dce5ed;--white:#fff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px Arial,sans-serif}header{background:linear-gradient(120deg,var(--navy),var(--blue));color:white;padding:22px max(16px,calc((100% - 1250px)/2))}header h1{margin:0;font-size:27px}header p{margin:6px 0 0;color:#e6eff8}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.userline{font-size:13px}nav{display:flex;gap:7px;flex-wrap:wrap;background:white;padding:10px max(12px,calc((100% - 1250px)/2));position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}nav button{border:0;border-radius:8px;padding:10px 13px;background:#eaf1f7;color:var(--navy);font-weight:bold;cursor:pointer}nav button.active{background:var(--blue);color:white}main{max-width:1250px;margin:22px auto;padding:0 14px}.page{display:none}.page.active{display:block}h2{color:var(--navy);margin:8px 0 16px}h3{color:var(--navy);margin-top:0}.card{background:white;padding:18px;border:1px solid var(--line);border-radius:13px;margin-bottom:15px;box-shadow:0 2px 8px #10243a0b}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px}.metric{font-size:23px;font-weight:bold;color:var(--blue);margin-top:7px;overflow-wrap:anywhere}.muted{color:#65788a;font-size:13px}.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}label{display:block;font-weight:bold;margin:9px 0 5px}input,select,textarea{width:100%;padding:10px;border:1px solid #cbd8e3;border-radius:8px;font-size:15px;background:white;color:var(--text)}input[type=file]{padding:7px}button{cursor:pointer}button.primary,.primary{background:var(--blue);color:white;border:0;padding:11px 16px;border-radius:8px;font-weight:bold;margin-top:12px}button.secondary{background:white;border:1px solid var(--line);padding:9px 12px;border-radius:8px;color:var(--navy)}button.danger{background:var(--red);color:white;border:0;padding:8px 10px;border-radius:7px}.tablewrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:top}th{background:#edf3f8;color:var(--navy)}.actions{display:flex;gap:6px;flex-wrap:wrap}.notice{padding:12px;background:#fff5df;border-left:4px solid var(--gold);border-radius:6px;margin:12px 0}.success{background:#e7f4f1;border-left-color:var(--teal)}.hidden{display:none!important}.tag{display:inline-block;background:#e7f4f1;color:#08756e;border-radius:20px;padding:4px 9px;font-size:12px}.avatar{width:76px;height:76px;object-fit:cover;border-radius:50%;background:#e7edf3}.profile{display:flex;gap:15px;align-items:center;flex-wrap:wrap}.login{max-width:440px;margin:50px auto}.right{float:right}.small{font-size:12px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.status{font-weight:bold}.fine{color:#b03a2e}.good{color:#08756e}#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#10243a;color:white;padding:12px 18px;border-radius:9px;z-index:20;display:none;max-width:90%;box-shadow:0 3px 18px #0003}@media(max-width:600px){header h1{font-size:23px}nav button{flex:1 1 40%}main{margin:14px auto}.metric{font-size:20px}}
 </style>
 </head>
 <body>
-<header><h1>FIKA Gestion – Migration V2 → Firebase</h1><p>Importation sécurisée des anciennes données</p></header>
+<header><div class="top"><div><h1>FIKA Gestion V3</h1><p>Cotisations · Membres · Crédits · Remboursements · Réunions · Rapports</p></div><div id="userline" class="userline"></div></div></header>
+<section id="loginView" class="login card"><h2>Connexion FIKA</h2><p class="muted">Injira email na mot de passe ya Firebase Authentication.</p><form id="loginForm"><label>Email</label><input id="email" type="email" required autocomplete="username"><label>Mot de passe</label><input id="password" type="password" required autocomplete="current-password"><button class="primary" type="submit">Se connecter</button></form><p id="loginError" class="fine"></p></section>
+<div id="appView" class="hidden">
+<nav id="navigation"><button class="active" data-page="dashboard">Tableau de bord</button><button data-page="members">Membres</button><button data-page="contributions">Cotisations</button><button data-page="credits">Crédits</button><button data-page="repayments">Remboursements</button><button data-page="meetings">Réunions</button><button data-page="reports">Rapports</button><button data-page="settings">Sauvegarde</button></nav>
 <main>
-<div class="card">
-<h2>1. Connexion du Président</h2>
-<p>Connectez-vous avec le compte Firebase Authentication du Président.</p>
-<label>Adresse e-mail</label><input id="email" type="email" autocomplete="username">
-<label>Mot de passe</label><input id="password" type="password" autocomplete="current-password">
-<button class="primary" id="loginBtn">Se connecter</button>
-<button class="secondary hidden" id="logoutBtn">Se déconnecter</button>
-<p id="authStatus"><small>Pas encore connecté.</small></p>
-</div>
-<div class="card">
-<h2>2. Choisir le fichier de sauvegarde V2</h2>
-<p>Sélectionnez le fichier JSON téléchargé depuis FIKA Gestion V2 : <b>Texte collé(1).txt</b>.</p>
-<input id="backup" type="file" accept=".txt,.json,application/json,text/plain">
-<div id="preview" class="counts"></div>
-<div class="notice">Les identifiants des documents seront conservés. Les photos sont incluses dans les fiches des membres. Cette page ne supprime rien de la V2.</div>
-<button class="primary" id="importBtn" disabled>Importer les données dans Firebase</button>
-</div>
-<div class="card">
-<h2>3. Résultat</h2>
-<div id="log">En attente de connexion et du fichier de sauvegarde.</div>
-</div>
-</main>
+<section id="dashboard" class="page active"><h2>Tableau de bord</h2><div id="dashboardCards" class="grid"></div><div class="card"><h3>Règles FIKA</h3><p>Activité du lundi au samedi (dimanche exclu). Cotisation manquée : 5 000 FBu.</p><p>Crédit : intérêt simple de 5 % par mois, maximum 3 mois, 26 jours ouvrables par mois. Échéance arrondie au multiple supérieur de 500 FBu.</p><p>Remboursement en retard : amende de 10 % de l'échéance quotidienne manquée, appliquée une seule fois. Réunion : premier jour du mois du lundi au samedi (si le 1er est dimanche, le 2). Retard : 5 000 FBu ; absence : 50 000 FBu.</p></div><div id="migrationInfo" class="notice"></div></section>
+<section id="members" class="page"><h2>Gestion des membres</h2><div class="card president-only"><h3>Ajouter / modifier un membre</h3><form id="memberForm"><input type="hidden" id="memberId"><div class="formgrid"><div><label>Nom complet</label><input id="memberName" required></div><div><label>Téléphone</label><input id="memberPhone"></div><div><label>Adresse</label><input id="memberAddress"></div><div><label>Référence carte ID / passeport</label><input id="memberDocument" placeholder="Référence seulement"></div><div><label>Photo</label><input id="memberPhoto" type="file" accept="image/*"></div></div><button class="primary">Enregistrer</button><button type="button" class="secondary" id="clearMember">Annuler</button></form></div><div class="card"><h3>Liste des membres</h3><div class="tablewrap"><table><thead><tr><th>Nom</th><th>Téléphone</th><th>Cotisations</th><th>Solde crédit</th><th>Actions</th></tr></thead><tbody id="membersTable"></tbody></table></div></div><div id="memberProfile"></div></section>
+<section id="contributions" class="page"><h2>Cotisations</h2><div class="card president-only"><h3>Enregistrer une cotisation</h3><form id="contributionForm"><div class="formgrid"><div><label>Membre</label><select id="contributionMember" required></select></div><div><label>Date</label><input type="date" id="contributionDate" required></div><div><label>Montant versé (FBu)</label><input type="number" id="contributionAmount" min="0" required></div><div><label>Amende (FBu)</label><input type="number" id="contributionFine" min="0" value="0"></div></div><button class="primary">Enregistrer</button></form></div><div class="card"><h3>Suivi des cotisations</h3><div class="formgrid"><div><label>Mois</label><input type="month" id="contributionMonth"></div><div><label>Jusqu'au jour</label><input type="date" id="contributionUntil"></div></div><p id="contributionTotals"></p><div class="tablewrap"><table><thead><tr><th>Date</th><th>Membre</th><th>Montant</th><th>Amende</th><th>Action</th></tr></thead><tbody id="contributionTable"></tbody></table></div></div></section>
+<section id="credits" class="page"><h2>Gestion des crédits</h2><div class="card president-only"><h3>Accorder un crédit</h3><form id="creditForm"><div class="formgrid"><div><label>Membre</label><select id="creditMember" required></select></div><div><label>Date du crédit</label><input type="date" id="creditDate" required></div><div><label>Capital (FBu)</label><input type="number" id="creditPrincipal" min="1" required></div><div><label>Durée</label><select id="creditMonths"><option value="1">1 mois – 26 jours</option><option value="2">2 mois – 52 jours</option><option value="3">3 mois – 78 jours</option></select></div></div><button class="primary">Créer le crédit</button></form></div><div class="card"><h3>Liste des crédits</h3><div class="tablewrap"><table><thead><tr><th>Membre</th><th>Capital</th><th>Total dû</th><th>Échéance/jour</th><th>Durée</th><th>Payé</th><th>Amendes</th><th>Solde</th><th>Actions</th></tr></thead><tbody id="creditsTable"></tbody></table></div></div></section>
+<section id="repayments" class="page"><h2>Remboursements</h2><div class="card president-only"><h3>Enregistrer un remboursement</h3><form id="repaymentForm"><div class="formgrid"><div><label>Crédit</label><select id="repaymentCredit" required></select></div><div><label>Date du paiement</label><input type="date" id="repaymentDate" required></div><div><label>Montant versé (FBu)</label><input type="number" id="repaymentAmount" min="1" required></div></div><p id="creditDueInfo" class="muted"></p><button class="primary">Enregistrer le paiement</button></form></div><div class="card"><h3>Historique des remboursements</h3><div class="tablewrap"><table><thead><tr><th>Date</th><th>Membre</th><th>Montant</th><th>Amende ajoutée</th><th>Solde après paiement</th><th>Actions</th></tr></thead><tbody id="repaymentsTable"></tbody></table></div></div></section>
+<section id="meetings" class="page"><h2>Réunions mensuelles</h2><div class="card president-only"><h3>Enregistrer la présence</h3><form id="meetingForm"><div class="formgrid"><div><label>Membre</label><select id="meetingMember" required></select></div><div><label>Date de réunion</label><input type="date" id="meetingDate" required></div><div><label>Statut</label><select id="meetingStatus"><option value="present">Présent</option><option value="late">En retard – 5 000 FBu</option><option value="absent">Absent – 50 000 FBu</option></select></div></div><button class="primary">Enregistrer</button></form></div><div class="card"><h3>Historique</h3><div class="tablewrap"><table><thead><tr><th>Date</th><th>Membre</th><th>Statut</th><th>Amende</th><th>Action</th></tr></thead><tbody id="meetingsTable"></tbody></table></div></div></section>
+<section id="reports" class="page"><h2>Rapports</h2><div class="card"><div class="formgrid"><div><label>Membre</label><select id="reportMember"><option value="all">Tous les membres</option></select></div><div><label>Du</label><input type="date" id="reportFrom"></div><div><label>Au</label><input type="date" id="reportTo"></div></div><button class="primary" id="runReport">Afficher</button><button class="secondary" id="printReport">Imprimer / PDF</button><div id="reportOutput"></div></div></section>
+<section id="settings" class="page"><h2>Sauvegarde et sécurité</h2><div class="card"><h3>Exporter les données</h3><p>Crée un fichier JSON contenant les données FIKA. Conserve-le dans un endroit sûr.</p><button class="primary" id="exportBackup">Télécharger la sauvegarde</button></div><div class="card president-only"><h3>Importer une sauvegarde JSON</h3><p class="notice">L'importation ajoute ou remplace les documents qui portent le même ID. Fais d'abord une sauvegarde.</p><input type="file" id="importFile" accept="application/json,.json"><button class="primary" id="importBackup">Importer dans Firebase</button></div><div class="card"><h3>Journal des modifications</h3><div class="tablewrap"><table><thead><tr><th>Date</th><th>Utilisateur</th><th>Action</th><th>Détail</th></tr></thead><tbody id="auditTable"></tbody></table></div></div><div class="card"><button class="secondary" id="refreshData">Actualiser les données</button><button class="danger" id="logout">Se déconnecter</button></div></section>
+</main></div><div id="toast"></div>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCTUMw7iNqG9QxVa3VJPDvTar_j0Yc-AlM",
-  authDomain: "fika-gestion.firebaseapp.com",
-  projectId: "fika-gestion",
-  storageBucket: "fika-gestion.firebasestorage.app",
-  messagingSenderId: "203406583998",
-  appId: "1:203406583998:web:1010d8acd29dcd226196ef"
-};
-const PRESIDENT_UID = "2uIa31Xjd8dkaxTg6bshvsvwvYY2";
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const $ = id => document.getElementById(id);
-let currentUser = null;
-let backupData = null;
-let importReady = false;
-
-function log(message, type="") {
-  $("log").textContent = message;
-  $("log").className = type;
-}
-function formatError(e) {
-  const code = e?.code ? ` (${e.code})` : "";
-  return (e?.message || String(e)) + code;
-}
-function validateData(data) {
-  const names = ["members","contributions","credits","repayments","meetings"];
-  if (!data || typeof data !== "object") throw new Error("Le fichier JSON n'est pas un objet valide.");
-  for (const name of names) {
-    if (!Array.isArray(data[name])) throw new Error(`La rubrique "${name}" est absente ou invalide.`);
-    for (let i=0;i<data[name].length;i++) {
-      const item=data[name][i];
-      if (!item || typeof item!=="object" || !item.id) throw new Error(`Identifiant manquant dans ${name}, ligne ${i+1}.`);
-      const bytes = new TextEncoder().encode(JSON.stringify(item)).length;
-      if (bytes > 900000) throw new Error(`Un document de ${name} dépasse la limite de sécurité (900 Ko). Aucun import n'a été lancé.`);
-    }
-  }
-  return names;
-}
-function updateImportButton() {
-  $("importBtn").disabled = !(currentUser && importReady && backupData);
-}
-onAuthStateChanged(auth, async user => {
-  currentUser = user;
-  if (user) {
-    $("authStatus").innerHTML = `<span class="ok">Connecté : ${user.email || "compte Firebase"}</span>`;
-    $("loginBtn").classList.add("hidden");
-    $("logoutBtn").classList.remove("hidden");
-    try {
-      const userDoc = await getDoc(doc(db,"users",user.uid));
-      const data = userDoc.exists() ? userDoc.data() : {};
-      if (user.uid !== PRESIDENT_UID || data.role !== "president" || data.active !== true) {
-        importReady = false;
-        $("authStatus").innerHTML = `<span class="err">Ce compte n'a pas les droits du Président.</span>`;
-      } else {
-        importReady = true;
-        $("authStatus").innerHTML = `<span class="ok">Président vérifié. Importation autorisée.</span>`;
-      }
-    } catch(e) {
-      importReady = false;
-      $("authStatus").innerHTML = `<span class="err">Vérification impossible : ${formatError(e)}</span>`;
-    }
-  } else {
-    importReady = false;
-    $("authStatus").innerHTML = "<small>Pas encore connecté.</small>";
-    $("loginBtn").classList.remove("hidden");
-    $("logoutBtn").classList.add("hidden");
-  }
-  updateImportButton();
-});
-$("loginBtn").addEventListener("click", async () => {
-  try {
-    await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);
-    $("password").value="";
-  } catch(e) { log("Connexion refusée : "+formatError(e),"err"); }
-});
-$("logoutBtn").addEventListener("click", async () => {
-  await signOut(auth);
-  log("Déconnecté.");
-});
-$("backup").addEventListener("change", async e => {
-  backupData=null;
-  $("preview").textContent="";
-  updateImportButton();
-  const file=e.target.files?.[0];
-  if(!file)return;
-  try {
-    const text=await file.text();
-    const parsed=JSON.parse(text);
-    const names=validateData(parsed);
-    backupData=parsed;
-    $("preview").innerHTML=names.map(n=>`<div>${n} : <b>${parsed[n].length}</b></div>`).join("");
-    const photos=parsed.members.filter(m=>m.photo).length;
-    $("preview").innerHTML += `<div>Photos de membres : <b>${photos}</b></div><div>Taille du fichier : <b>${(file.size/1024).toFixed(1)} Ko</b></div>`;
-    log("Fichier valide. Vérification prête. Aucun document n'a encore été importé.","ok");
-  } catch(err) {
-    log("Fichier refusé : "+formatError(err),"err");
-  }
-  updateImportButton();
-});
-$("importBtn").addEventListener("click", async () => {
-  if(!currentUser || !importReady || !backupData)return;
-  const confirmed=confirm("Confirmez-vous l'importation des données V2 dans Firebase ? Les documents seront enregistrés avec leurs anciens identifiants. Ne fermez pas cette page pendant l'opération.");
-  if(!confirmed)return;
-  $("importBtn").disabled=true;
-  const names=["members","contributions","credits","repayments","meetings"];
-  const markerRef=doc(db,"system","migration_v2");
-  try {
-    const marker=await getDoc(markerRef);
-    if(marker.exists() && marker.data().status==="complete") {
-      throw new Error("Une migration V2 est déjà marquée comme terminée. Aucun nouvel import n'a été effectué.");
-    }
-    await setDoc(markerRef,{
-      status:"running",
-      startedAt:serverTimestamp(),
-      startedBy:currentUser.uid,
-      source:"FIKA_GESTION_V2",
-      counts:Object.fromEntries(names.map(n=>[n,backupData[n].length]))
-    },{merge:true});
-    let done=0;
-    const total=names.reduce((s,n)=>s+backupData[n].length,0);
-    for(const name of names) {
-      const items=backupData[name];
-      for(let start=0;start<items.length;start+=400) {
-        const batch=writeBatch(db);
-        for(const item of items.slice(start,start+400)) {
-          const {id,...fields}=item;
-          batch.set(doc(db,name,String(id)),{...fields,id:String(id),legacyId:String(id),migratedFrom:"V2"});
-        }
-        await batch.commit();
-        done += Math.min(400,items.length-start);
-        log(`Importation en cours : ${done}/${total} enregistrements terminés…`);
-      }
-    }
-    await setDoc(markerRef,{
-      status:"complete",
-      completedAt:serverTimestamp(),
-      completedBy:currentUser.uid,
-      counts:Object.fromEntries(names.map(n=>[n,backupData[n].length]))
-    },{merge:true});
-    log("IMPORTATION TERMINÉE.\n\nMembres : "+backupData.members.length+
-      "\nCotisations : "+backupData.contributions.length+
-      "\nCrédits : "+backupData.credits.length+
-      "\nRemboursements : "+backupData.repayments.length+
-      "\nRéunions : "+backupData.meetings.length+
-      "\n\nLes anciens identifiants ont été conservés. Gardez le fichier de sauvegarde V2.","ok");
-    $("importBtn").disabled=true;
-  } catch(e) {
-    log("L'importation n'a pas pu se terminer : "+formatError(e)+
-      "\n\nSi l'état est 'running', vous pouvez recharger la page et relancer le même fichier : les mêmes identifiants seront réutilisés. Ne supprimez pas les données.","err");
-    updateImportButton();
-  }
-});
-</script>
-</body>
-</html>
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import {getFirestore,collection,doc,getDoc,getDocs,setDoc,deleteDoc,writeBatch,serverTimestamp,query,orderBy,limit} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+const firebaseConfig={apiKey:'AIzaSyCTUMW7wiNqG9QxVa3VJPDvTar_j0Yc-AlM',authDomain:'fika-gestion.firebaseapp.com',projectId:'fika-gestion',storageBucket:'fika-gestion.firebasestorage.app',messagingSenderId:'203406583998',appId:'1:203406583998:web:1010d8acd29dcd226196ef'};
+const PRESIDENT_UID='2uIa31Xjd8dkaxTg6bshvsvwvYY2';
+const app=initializeApp(firebaseConfig),auth=getAuth(app),fs=getFirestore(app);
+const $=id=>document.getElementById(id),money=n=>(Number(n)||0).toLocaleString('fr-FR')+' FBu',esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+let currentUser=null,userRole='',isPresident=false,db={members:[],contributions:[],credits:[],repayments:[],meetings:[],audit:[]};
+const collections=['members','contributions','credits','repayments','meetings','audit'];
+const today=new Date().toISOString().slice(0,10);
+function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',3200)}
+function member(id){return db.members.find(x=>x.id===id)}function credit(id){return db.credits.find(x=>x.id===id)}function balance(c){return Math.max(0,(Number(c.totalDue)||0)+(Number(c.fines)||0)-(Number(c.paid)||0))}
+function addDays(s,n){let d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}function workingDates(start,count){let a=[],d=start;while(a.length<count){if(new Date(d+'T12:00:00').getDay()!==0)a.push(d);d=addDays(d,1)}return a}function round500(n){return Math.ceil(n/500)*500}
+async function audit(action,detail){if(!currentUser)return;let a={id:uid(),action,detail,actor:currentUser.email||currentUser.uid,actorUid:currentUser.uid,createdAt:new Date().toISOString()};await setDoc(doc(fs,'audit',a.id),a);db.audit.unshift(a)}
+async function loadData(){for(const name of collections){const snap=await getDocs(collection(fs,name));db[name]=snap.docs.map(d=>({id:d.id,...d.data()}))}db.audit.sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));renderAll()}
+async function saveDoc(name,obj){if(!isPresident)throw Error('Seul le Président peut modifier les données.');await setDoc(doc(fs,name,obj.id),obj);let i=db[name].findIndex(x=>x.id===obj.id);if(i<0)db[name].push(obj);else db[name][i]=obj}
+async function removeDoc(name,id){if(!isPresident)throw Error('Action réservée au Président.');await deleteDoc(doc(fs,name,id));db[name]=db[name].filter(x=>x.id!==id);await audit('SUPPRESSION',name+' / '+id)}
+function setRoleUI(){document.querySelectorAll('.president-only').forEach(el=>el.classList.toggle('hidden',!isPresident));$('userline').innerHTML=`${esc(currentUser.email||'')} · ${isPresident?'Président':'Lecture seule'} <button class="secondary" id="logoutTop">Déconnexion</button>`;$('logoutTop').onclick=()=>signOut(auth)}
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id))}
+$('navigation').addEventListener('click',e=>{let b=e.target.closest('button[data-page]');if(b)showPage(b.dataset.page)});
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginError').textContent='';try{await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(err){$('loginError').textContent='Connexion impossible : '+err.message}});
+onAuthStateChanged(auth,async user=>{currentUser=user;if(!user){$('loginView').classList.remove('hidden');$('appView').classList.add('hidden');$('userline').textContent='';return}try{let u=await getDoc(doc(fs,'users',user.uid));if(!u.exists()||u.data().active!==true){await signOut(auth);$('loginError').textContent='Compte non autorisé ou désactivé.';return}userRole=u.data().role||'user';isPresident=user.uid===PRESIDENT_UID&&userRole==='president';$('loginView').classList.add('hidden');$('appView').classList.remove('hidden');setRoleUI();await loadData();$('migrationInfo').textContent='Connecté à Firebase. Données synchronisées depuis Firestore. Les membres et historiques sont visibles selon les autorisations du compte.'}catch(err){toast('Erreur de chargement : '+err.message)}});
+$('logout').onclick=()=>signOut(auth);$('refreshData').onclick=()=>loadData().then(()=>toast('Données actualisées.')).catch(e=>toast(e.message));
+function fillMembers(id,all=false){let el=$(id),old=el.value;el.innerHTML=(all?'<option value="all">Tous les membres</option>':'<option value="">Choisir un membre</option>')+db.members.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');if([...el.options].some(o=>o.value===old))el.value=old}
+function renderDashboard(){let con=db.contributions.reduce((s,x)=>s+(+x.amount||0),0),principal=db.credits.reduce((s,x)=>s+(+x.principal||0),0),paid=db.repayments.reduce((s,x)=>s+(+x.amount||0),0),bal=db.credits.reduce((s,x)=>s+balance(x),0),fines=db.contributions.reduce((s,x)=>s+(+x.fine||0),0)+db.credits.reduce((s,x)=>s+(+x.fines||0),0)+db.meetings.reduce((s,x)=>s+(+x.fine||0),0);let items=[['Membres',db.members.length],['Cotisations cumulées',money(con)],['Crédits accordés',money(principal)],['Remboursements',money(paid)],['Solde des crédits',money(bal)],['Amendes enregistrées',money(fines)]];$('dashboardCards').innerHTML=items.map(x=>`<div class="card"><div class="muted">${x[0]}</div><div class="metric">${x[1]}</div></div>`).join('')}
+function renderMembers(){$('membersTable').innerHTML=db.members.map(m=>{let con=db.contributions.filter(x=>x.memberId===m.id).reduce((s,x)=>s+(+x.amount||0),0),bal=db.credits.filter(x=>x.memberId===m.id).reduce((s,x)=>s+balance(x),0);return `<tr><td>${esc(m.name)}</td><td>${esc(m.phone||'')}</td><td>${money(con)}</td><td>${money(bal)}</td><td><div class="actions"><button class="secondary" data-profile="${esc(m.id)}">Fiche</button>${isPresident?`<button class="secondary" data-edit-member="${esc(m.id)}">Modifier</button><button class="danger" data-delete-member="${esc(m.id)}">Supprimer</button>`:''}</div></td></tr>`}).join('')}
+$('membersTable').addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;let id=b.dataset.profile||b.dataset.editMember||b.dataset.deleteMember,m=member(id);if(!m)return;if(b.dataset.profile){showProfile(id);return}if(b.dataset.editMember){$('memberId').value=id;$('memberName').value=m.name||'';$('memberPhone').value=m.phone||'';$('memberAddress').value=m.address||'';$('memberDocument').value=m.document||'';photoData='';$('memberPhoto').value='';showPage('members');return}if(confirm('Supprimer ce membre ? Cette action ne supprime pas ses historiques.')){try{await removeDoc('members',id);renderAll();toast('Membre supprimé.')}catch(err){toast(err.message)}}});
+function showProfile(id){let m=member(id);if(!m)return;let cs=db.contributions.filter(x=>x.memberId===id),ls=db.credits.filter(x=>x.memberId===id),rs=db.repayments.filter(x=>x.memberId===id),total=a=>a.reduce((s,x)=>s+(+x.amount||0),0);$('memberProfile').innerHTML=`<div class="card"><div class="profile">${m.photo?`<img class="avatar" src="${m.photo}" alt="Photo">`:''}<div><h3>${esc(m.name)}</h3><p>${esc(m.phone||'')} · ${esc(m.address||'')}</p><span class="tag">Fiche individuelle</span></div></div><p>Référence document : ${esc(m.document||'Non renseignée')}</p><div class="grid"><div><b>Cotisations</b><div class="metric">${money(total(cs))}</div></div><div><b>Crédits accordés</b><div class="metric">${money(ls.reduce((s,x)=>s+(+x.principal||0),0))}</div></div><div><b>Remboursements</b><div class="metric">${money(total(rs))}</div></div><div><b>Solde des crédits</b><div class="metric">${money(ls.reduce((s,x)=>s+balance(x),0))}</div></div></div><h3>Crédits</h3>${ls.map(c=>`<p>${esc(c.date)} — ${money(c.principal)} — ${c.months} mois — solde ${money(balance(c))}</p>`).join('')||'Aucun crédit'}<h3>Cotisations</h3>${cs.map(x=>`<p>${esc(x.date)} : ${money(x.amount)} — amende ${money(x.fine)}</p>`).join('')||'Aucune cotisation'}<h3>Remboursements</h3>${rs.map(x=>`<p>${esc(x.date)} : ${money(x.amount)} — amende ${money(x.fine)}</p>`).join('')||'Aucun remboursement'}</div>`}
+let photoData='';$('memberPhoto').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;if(f.size>700000){toast('Photo trop grande. Choisis une photo de moins de 700 Ko.');e.target.value='';return}let r=new FileReader();r.onload=()=>photoData=r.result;r.readAsDataURL(f)});$('clearMember').onclick=()=>{$('memberForm').reset();$('memberId').value='';photoData=''};
+$('memberForm').addEventListener('submit',async e=>{e.preventDefault();try{let id=$('memberId').value||uid(),old=member(id),obj={id,name:$('memberName').value.trim(),phone:$('memberPhone').value.trim(),address:$('memberAddress').value.trim(),document:$('memberDocument').value.trim(),photo:photoData||old?.photo||'',updatedAt:new Date().toISOString()};await saveDoc('members',obj);await audit(old?'MODIFICATION MEMBRE':'AJOUT MEMBRE',obj.name);$('memberForm').reset();$('memberId').value='';photoData='';renderAll();toast('Membre enregistré.')}catch(err){toast(err.message)}});
+$('contributionForm').addEventListener('submit',async e=>{e.preventDefault();try{let x={id:uid(),memberId:$('contributionMember').value,date:$('contributionDate').value,amount:+$('contributionAmount').value,fine:+$('contributionFine').value||0};await saveDoc('contributions',x);await audit('COTISATION',member(x.memberId)?.name+' : '+money(x.amount));e.target.reset();$('contributionDate').value=today;renderAll();toast('Cotisation enregistrée.')}catch(err){toast(err.message)}});
+function renderContributions(){let month=$('contributionMonth').value,until=$('contributionUntil').value,rows=db.contributions.filter(x=>(!month||String(x.date).startsWith(month))&&(!until||x.date<=until));$('contributionTable').innerHTML=rows.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(member(x.memberId)?.name||'')}</td><td>${money(x.amount)}</td><td>${money(x.fine)}</td><td>${isPresident?`<div class="actions"><button class="secondary" data-edit-con="${esc(x.id)}">Modifier</button><button class="danger" data-delete-con="${esc(x.id)}">Supprimer</button></div>`:'—'}</td></tr>`).join('');$('contributionTotals').textContent='Total cotisations : '+money(rows.reduce((s,x)=>s+(+x.amount||0),0))+' | Total amendes : '+money(rows.reduce((s,x)=>s+(+x.fine||0),0))}
+$('contributionTable').addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;let x=db.contributions.find(v=>v.id===(b.dataset.editCon||b.dataset.deleteCon));if(!x)return;if(b.dataset.editCon){let date=prompt('Date (AAAA-MM-JJ) :',x.date||'');if(date===null)return;let amount=prompt('Montant versé (FBu) :',String(x.amount||0));if(amount===null)return;let fine=prompt('Amende (FBu) :',String(x.fine||0));if(fine===null)return;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(+amount)||+amount<0||!Number.isFinite(+fine)||+fine<0)return toast('Valeurs invalides.');try{x.date=date;x.amount=+amount;x.fine=+fine;await saveDoc('contributions',x);await audit('MODIFICATION COTISATION',member(x.memberId)?.name+' : '+money(x.amount));renderAll();toast('Cotisation modifiée.')}catch(err){toast(err.message)}return}if(b.dataset.deleteCon&&confirm('Supprimer cette cotisation ?'))try{await removeDoc('contributions',x.id);renderAll();toast('Cotisation supprimée.')}catch(err){toast(err.message)}});
+async function changeFine(type,id){if(!isPresident)return toast('Action réservée au Président.');let name=type==='contribution'?'contributions':type==='meeting'?'meetings':'credits',obj=db[name].find(x=>x.id===id);if(!obj)return;let old=type==='credit'?(+obj.fines||0):(+obj.fine||0),v=prompt('Nouvelle amende en FBu (0 pour annuler) :',String(old));if(v===null)return;let amount=Number(v);if(!Number.isFinite(amount)||amount<0)return toast('Montant invalide.');if(type==='credit')obj.fines=amount;else obj.fine=amount;try{await saveDoc(name,obj);await audit('MODIFICATION AMENDE',type+' '+id+' : '+money(old)+' → '+money(amount));renderAll();toast('Amende modifiée.')}catch(err){toast(err.message)}}
+document.addEventListener('click',e=>{let b=e.target.closest('[data-edit-fine]');if(b){let [type,id]=b.dataset.editFine.split(':');changeFine(type,id)}});$('contributionMonth').onchange=renderContributions;$('contributionUntil').onchange=renderContributions;
+$('creditForm').addEventListener('submit',async e=>{e.preventDefault();try{let principal=+$('creditPrincipal').value,months=+$('creditMonths').value,days=26*months,totalDue=Math.round(principal*(1+.05*months)),daily=round500(totalDue/days),dates=workingDates($('creditDate').value,days),schedule=dates.map((date,i)=>({date,amount:i===days-1?Math.max(0,totalDue-daily*(days-1)):daily,fineApplied:false,fine:0})),c={id:uid(),memberId:$('creditMember').value,date:$('creditDate').value,principal,months,days,totalDue,daily,schedule,paid:0,fines:0};await saveDoc('credits',c);await audit('NOUVEAU CRÉDIT',member(c.memberId)?.name+' : '+money(principal));e.target.reset();$('creditDate').value=today;renderAll();toast('Crédit créé.')}catch(err){toast(err.message)}});
+function renderCredits(){$('creditsTable').innerHTML=db.credits.map(c=>`<tr><td>${esc(member(c.memberId)?.name||'')}</td><td>${money(c.principal)}</td><td>${money(c.totalDue)}</td><td>${money(c.daily)}</td><td>${c.months} mois / ${c.days} jours</td><td>${money(c.paid)}</td><td>${money(c.fines)} ${isPresident?`<button class="secondary" data-edit-fine="credit:${esc(c.id)}">Modifier amende</button>`:''}</td><td>${money(balance(c))}</td><td>${isPresident?`<div class="actions"><button class="secondary" data-edit-credit="${esc(c.id)}">Modifier crédit</button><button class="danger" data-delete-credit="${esc(c.id)}">Supprimer</button></div>`:'—'}</td></tr>`).join('');$('repaymentCredit').innerHTML='<option value="">Choisir un crédit</option>'+db.credits.filter(c=>balance(c)>0).map(c=>`<option value="${esc(c.id)}">${esc(member(c.memberId)?.name||'')} — solde ${money(balance(c))}</option>`).join('')}
+$('creditsTable').addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;let c=credit(b.dataset.editCredit||b.dataset.deleteCredit);if(!c)return;if(b.dataset.editCredit){if(db.repayments.some(r=>r.creditId===c.id)){toast('Ce crédit a déjà des remboursements. Modifie seulement son amende pour préserver les calculs.');return}let date=prompt('Date du crédit (AAAA-MM-JJ) :',c.date||'');if(date===null)return;let principal=prompt('Capital (FBu) :',String(c.principal));if(principal===null)return;let months=prompt('Durée en mois (1, 2 ou 3) :',String(c.months));if(months===null)return;principal=Number(principal);months=Number(months);if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(principal)||principal<=0||![1,2,3].includes(months))return toast('Valeurs invalides.');let days=26*months,totalDue=Math.round(principal*(1+.05*months)),daily=round500(totalDue/days),dates=workingDates(date,days);c.date=date;c.principal=principal;c.months=months;c.days=days;c.totalDue=totalDue;c.daily=daily;c.schedule=dates.map((d,i)=>({date:d,amount:i===days-1?Math.max(0,totalDue-daily*(days-1)):daily,fineApplied:false,fine:0}));try{await saveDoc('credits',c);await audit('MODIFICATION CRÉDIT',member(c.memberId)?.name+' : '+money(principal));renderAll();toast('Crédit modifié.')}catch(err){toast(err.message)}return}if(b.dataset.deleteCredit){if(db.repayments.some(r=>r.creditId===c.id)){toast('Impossible de supprimer : ce crédit possède déjà des remboursements.');return}if(confirm('Supprimer ce crédit ?'))try{await removeDoc('credits',c.id);renderAll();toast('Crédit supprimé.')}catch(err){toast(err.message)}}});
+$('repaymentCredit').onchange=()=>{let c=credit($('repaymentCredit').value);$('creditDueInfo').textContent=c?`Échéance/jour : ${money(c.daily)} · Déjà payé : ${money(c.paid)} · Amendes : ${money(c.fines)} · Solde : ${money(balance(c))}`:''};
+$('repaymentForm').addEventListener('submit',async e=>{e.preventDefault();try{let c=credit($('repaymentCredit').value);if(!c)throw Error('Choisis un crédit.');let date=$('repaymentDate').value,amount=+$('repaymentAmount').value,newFine=0;c.schedule=(c.schedule||[]).map(it=>{if(it.date<date&&!it.fineApplied){it.fine=Math.ceil((+it.amount||0)*.10);it.fineApplied=true;c.fines=(+c.fines||0)+it.fine;newFine+=it.fine}return it});c.paid=(+c.paid||0)+amount;let r={id:uid(),creditId:c.id,memberId:c.memberId,date,amount,fine:newFine,balance:balance(c)};await saveDoc('credits',c);await saveDoc('repayments',r);await audit('REMBOURSEMENT',member(c.memberId)?.name+' : '+money(amount)+' ; amende '+money(newFine));e.target.reset();$('repaymentDate').value=today;renderAll();toast('Remboursement enregistré. Amende ajoutée : '+money(newFine))}catch(err){toast(err.message)}});
+function renderRepayments(){$('repaymentsTable').innerHTML=db.repayments.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(member(x.memberId)?.name||'')}</td><td>${money(x.amount)}</td><td>${money(x.fine)}</td><td>${money(x.balance)}</td><td>${isPresident?`<div class="actions"><button class="secondary" data-edit-repayment="${esc(x.id)}">Modifier</button><button class="danger" data-delete-repayment="${esc(x.id)}">Supprimer</button></div>`:'—'}</td></tr>`).join('')}
+$('repaymentsTable').addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;let r=db.repayments.find(v=>v.id===(b.dataset.editRepayment||b.dataset.deleteRepayment));if(!r)return;let c=credit(r.creditId);if(!c)return toast('Crédit associé introuvable.');if(b.dataset.editRepayment){let date=prompt('Date du paiement (AAAA-MM-JJ) :',r.date||'');if(date===null)return;let amount=prompt('Montant versé (FBu) :',String(r.amount||0));if(amount===null)return;amount=Number(amount);if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(amount)||amount<=0)return toast('Valeurs invalides.');try{c.paid=Math.max(0,(+c.paid||0)-(+r.amount||0)+amount);r.date=date;r.amount=amount;r.balance=balance(c);await saveDoc('credits',c);await saveDoc('repayments',r);await audit('MODIFICATION REMBOURSEMENT',member(r.memberId)?.name+' : '+money(amount));renderAll();toast('Remboursement modifié. L’amende historique est conservée.')}catch(err){toast(err.message)}return}if(b.dataset.deleteRepayment&&confirm('Supprimer ce remboursement ? Le montant sera retiré du total payé. Les amendes déjà appliquées resteront dans l’historique du crédit.'))try{c.paid=Math.max(0,(+c.paid||0)-(+r.amount||0));await saveDoc('credits',c);await removeDoc('repayments',r.id);await audit('SUPPRESSION REMBOURSEMENT',member(r.memberId)?.name+' : '+money(r.amount));renderAll();toast('Remboursement supprimé.')}catch(err){toast(err.message)}});
+$('meetingForm').addEventListener('submit',async e=>{e.preventDefault();try{let status=$('meetingStatus').value,fine=status==='late'?5000:status==='absent'?50000:0,x={id:uid(),memberId:$('meetingMember').value,date:$('meetingDate').value,status,fine};let duplicate=db.meetings.some(m=>m.memberId===x.memberId&&m.date.slice(0,7)===x.date.slice(0,7));if(duplicate)throw Error('La présence de ce membre est déjà enregistrée pour ce mois.');await saveDoc('meetings',x);await audit('RÉUNION',member(x.memberId)?.name+' : '+status);e.target.reset();$('meetingDate').value=today;renderAll();toast('Présence enregistrée.')}catch(err){toast(err.message)}});
+function renderMeetings(){$('meetingsTable').innerHTML=db.meetings.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(member(x.memberId)?.name||'')}</td><td>${x.status==='late'?'En retard':x.status==='absent'?'Absent':'Présent'}</td><td>${money(x.fine)}</td><td>${isPresident?`<div class="actions"><button class="secondary" data-edit-meeting="${esc(x.id)}">Modifier</button><button class="danger" data-delete-meeting="${esc(x.id)}">Supprimer</button></div>`:'—'}</td></tr>`).join('')}
+$('meetingsTable').addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;let x=db.meetings.find(v=>v.id===(b.dataset.editMeeting||b.dataset.deleteMeeting));if(!x)return;if(b.dataset.editMeeting){let date=prompt('Date (AAAA-MM-JJ) :',x.date||'');if(date===null)return;let status=prompt('Statut : present, late ou absent',x.status||'present');if(status===null)return;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!['present','late','absent'].includes(status))return toast('Valeurs invalides.');let fine=status==='late'?5000:status==='absent'?50000:0;let custom=prompt('Amende en FBu (tu peux modifier le montant) :',String(x.fine??fine));if(custom===null)return;if(!Number.isFinite(+custom)||+custom<0)return toast('Amende invalide.');try{x.date=date;x.status=status;x.fine=+custom;await saveDoc('meetings',x);await audit('MODIFICATION RÉUNION',member(x.memberId)?.name+' : '+status);renderAll();toast('Présence modifiée.')}catch(err){toast(err.message)}return}if(b.dataset.deleteMeeting&&confirm('Supprimer cette présence ?'))try{await removeDoc('meetings',x.id);renderAll();toast('Enregistrement supprimé.')}catch(err){toast(err.message)}});
+function renderReport(){let id=$('reportMember').value||'all',from=$('reportFrom').value,to=$('reportTo').value,filter=x=>(id==='all'||x.memberId===id)&&(!from||x.date>=from)&&(!to||x.date<=to),cs=db.contributions.filter(filter),rs=db.repayments.filter(filter),ms=db.meetings.filter(filter),ls=db.credits.filter(filter),sum=(a,k)=>a.reduce((s,x)=>s+(+x[k]||0),0);$('reportOutput').innerHTML=`<h3>Rapport : ${id==='all'?'Tous les membres':esc(member(id)?.name||'')}</h3><div class="grid"><div><b>Cotisations</b><p>${money(sum(cs,'amount'))}</p></div><div><b>Amendes cotisations</b><p>${money(sum(cs,'fine'))}</p></div><div><b>Crédits accordés</b><p>${money(sum(ls,'principal'))}</p></div><div><b>Remboursements</b><p>${money(sum(rs,'amount'))}</p></div><div><b>Solde des crédits</b><p>${money(ls.reduce((s,c)=>s+balance(c),0))}</p></div><div><b>Amendes réunions</b><p>${money(sum(ms,'fine'))}</p></div></div>`}
+$('runReport').onclick=renderReport;$('printReport').onclick=()=>window.print();
+function renderAudit(){$('auditTable').innerHTML=db.audit.slice(0,100).map(x=>`<tr><td>${esc(x.createdAt||'')}</td><td>${esc(x.actor||'')}</td><td>${esc(x.action||'')}</td><td>${esc(x.detail||'')}</td></tr>`).join('')}
+function renderAll(){fillMembers('contributionMember');fillMembers('creditMember');fillMembers('meetingMember');fillMembers('reportMember',true);renderDashboard();renderMembers();renderContributions();renderCredits();renderRepayments();renderMeetings();renderAudit();renderReport()}
+for(const id of ['contributionDate','creditDate','repaymentDate','meetingDate'])$(id).value=today;$('contributionMonth').value=today.slice(0,7);$('contributionUntil').value=today;
+$('exportBackup').onclick=()=>{let payload={version:3,exportedAt:new Date().toISOString(),...db};let blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FIKA_GESTION_BACKUP_'+today+'.json';a.click();URL.revokeObjectURL(a.href)};
+$('importBackup').onclick=async()=>{let f=$('importFile').files[0];if(!f)return toast('Choisis un fichier JSON.');if(!confirm('Importer cette sauvegarde ? Les documents portant le même ID seront remplacés.'))return;try{let data=JSON.parse(await f.text()),batch=writeBatch(fs),count=0;for(const name of ['members','contributions','credits','repayments','meetings'])for(const item of (data[name]||[])){if(!item.id)continue;let clean={...item};delete clean.id;batch.set(doc(fs,name,item.id),clean);count++;if(count%400===0){await batch.commit();batch=writeBatch(fs)}}if(count%400)await batch.commit();await audit('IMPORTATION SAUVEGARDE',count+' documents importés');await loadData();toast(count+' documents importés.')}catch(err){toast('Import impossible : '+err.message)}};
+</script></body></html>
