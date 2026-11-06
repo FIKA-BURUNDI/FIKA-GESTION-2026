@@ -26,8 +26,16 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import {getFirestore,collection,doc,getDoc,getDocs,setDoc,deleteDoc,writeBatch,serverTimestamp,query,orderBy,limit} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
-const firebaseConfig={apiKey:'AIzaSyCTUMW7wiNqG9QxVa3VJPDvTar_j0Yc-AlM',authDomain:'fika-gestion.firebaseapp.com',projectId:'fika-gestion',storageBucket:'fika-gestion.firebasestorage.app',messagingSenderId:'203406583998',appId:'1:203406583998:web:1010d8acd29dcd226196ef'};
-const PRESIDENT_UID='2uIa31Xjd8dkaxTg6bshvsvwvYY2';
+const firebaseConfig={apiKey:'AIzaSyCTUMW7wiNqG9QxVa3VJPDvTar_j0Yc-AlM',authDomain:'fika-gestion.const firebaseConfig = {
+  apiKey: "AIzaSyCTUMW7iNqG9QxVa3VJPDvTar_j0Yc-AlM",
+  authDomain: "fika-gestion.firebaseapp.com",
+  projectId: "fika-gestion",
+  storageBucket: "fika-gestion.firebasestorage.app",
+  messagingSenderId: "203406583998",
+  appId: "1:203406583998:web:1010d8acd29dcd226196ef"
+};
+
+const PRESIDENT_UID = "2uIa31Xjd8dkaxTg6bshvsvwvYY2";='2uIa31Xjd8dkaxTg6bshvsvwvYY2';
 const app=initializeApp(firebaseConfig),auth=getAuth(app),fs=getFirestore(app);
 const $=id=>document.getElementById(id),money=n=>(Number(n)||0).toLocaleString('fr-FR')+' FBu',esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 let currentUser=null,userRole='',isPresident=false,db={members:[],contributions:[],credits:[],repayments:[],meetings:[],audit:[]};
