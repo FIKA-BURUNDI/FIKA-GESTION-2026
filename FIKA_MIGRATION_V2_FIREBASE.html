@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIKA – Importation V2 vers Firebase</title>
+<style>
+:root{--navy:#10243a;--blue:#1769aa;--green:#087f5b;--red:#b42318;--bg:#f2f6fa;--line:#dce5ed}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#203447;font:16px Arial,sans-serif}
+header{background:linear-gradient(120deg,var(--navy),var(--blue));color:white;padding:24px}
+main{max-width:850px;margin:24px auto;padding:0 15px}.card{background:white;padding:20px;border:1px solid var(--line);border-radius:13px;margin-bottom:17px}
+h1{margin:0;font-size:26px}h2{color:var(--navy);font-size:21px}
+label{display:block;font-weight:bold;margin:12px 0 6px}input{width:100%;padding:12px;border:1px solid #cbd8e3;border-radius:8px;font-size:16px}
+button{border:0;border-radius:8px;padding:12px 17px;font-weight:bold;cursor:pointer;margin:10px 8px 0 0}
+.primary{background:var(--blue);color:white}.secondary{background:#eaf1f7;color:var(--navy)}button:disabled{opacity:.5;cursor:not-allowed}
+.notice{background:#fff5df;border-left:4px solid #e6a23c;padding:13px;border-radius:6px;margin:12px 0}
+.ok{color:var(--green);font-weight:bold}.err{color:var(--red);font-weight:bold}
+#log{white-space:pre-wrap;background:#101d2b;color:#e8f0f8;padding:14px;border-radius:8px;min-height:70px;overflow-wrap:anywhere}
+small{color:#65788a}.hidden{display:none}.counts{line-height:1.8}
+</style>
+</head>
+<body>
+<header><h1>FIKA Gestion – Migration V2 → Firebase</h1><p>Importation sécurisée des anciennes données</p></header>
+<main>
+<div class="card">
+<h2>1. Connexion du Président</h2>
+<p>Connectez-vous avec le compte Firebase Authentication du Président.</p>
+<label>Adresse e-mail</label><input id="email" type="email" autocomplete="username">
+<label>Mot de passe</label><input id="password" type="password" autocomplete="current-password">
+<button class="primary" id="loginBtn">Se connecter</button>
+<button class="secondary hidden" id="logoutBtn">Se déconnecter</button>
+<p id="authStatus"><small>Pas encore connecté.</small></p>
+</div>
+<div class="card">
+<h2>2. Choisir le fichier de sauvegarde V2</h2>
+<p>Sélectionnez le fichier JSON téléchargé depuis FIKA Gestion V2 : <b>Texte collé(1).txt</b>.</p>
+<input id="backup" type="file" accept=".txt,.json,application/json,text/plain">
+<div id="preview" class="counts"></div>
+<div class="notice">Les identifiants des documents seront conservés. Les photos sont incluses dans les fiches des membres. Cette page ne supprime rien de la V2.</div>
+<button class="primary" id="importBtn" disabled>Importer les données dans Firebase</button>
+</div>
+<div class="card">
+<h2>3. Résultat</h2>
+<div id="log">En attente de connexion et du fichier de sauvegarde.</div>
+</div>
+</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCTUMw7iNqG9QxVa3VJPDvTar_j0Yc-AlM",
+  authDomain: "fika-gestion.firebaseapp.com",
+  projectId: "fika-gestion",
+  storageBucket: "fika-gestion.firebasestorage.app",
+  messagingSenderId: "203406583998",
+  appId: "1:203406583998:web:1010d8acd29dcd226196ef"
+};
+const PRESIDENT_UID = "2uIa31Xjd8dkaxTg6bshvsvwvYY2";
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+let currentUser = null;
+let backupData = null;
+let importReady = false;
+
+function log(message, type="") {
+  $("log").textContent = message;
+  $("log").className = type;
+}
+function formatError(e) {
+  const code = e?.code ? ` (${e.code})` : "";
+  return (e?.message || String(e)) + code;
+}
+function validateData(data) {
+  const names = ["members","contributions","credits","repayments","meetings"];
+  if (!data || typeof data !== "object") throw new Error("Le fichier JSON n'est pas un objet valide.");
+  for (const name of names) {
+    if (!Array.isArray(data[name])) throw new Error(`La rubrique "${name}" est absente ou invalide.`);
+    for (let i=0;i<data[name].length;i++) {
+      const item=data[name][i];
+      if (!item || typeof item!=="object" || !item.id) throw new Error(`Identifiant manquant dans ${name}, ligne ${i+1}.`);
+      const bytes = new TextEncoder().encode(JSON.stringify(item)).length;
+      if (bytes > 900000) throw new Error(`Un document de ${name} dépasse la limite de sécurité (900 Ko). Aucun import n'a été lancé.`);
+    }
+  }
+  return names;
+}
+function updateImportButton() {
+  $("importBtn").disabled = !(currentUser && importReady && backupData);
+}
+onAuthStateChanged(auth, async user => {
+  currentUser = user;
+  if (user) {
+    $("authStatus").innerHTML = `<span class="ok">Connecté : ${user.email || "compte Firebase"}</span>`;
+    $("loginBtn").classList.add("hidden");
+    $("logoutBtn").classList.remove("hidden");
+    try {
+      const userDoc = await getDoc(doc(db,"users",user.uid));
+      const data = userDoc.exists() ? userDoc.data() : {};
+      if (user.uid !== PRESIDENT_UID || data.role !== "president" || data.active !== true) {
+        importReady = false;
+        $("authStatus").innerHTML = `<span class="err">Ce compte n'a pas les droits du Président.</span>`;
+      } else {
+        importReady = true;
+        $("authStatus").innerHTML = `<span class="ok">Président vérifié. Importation autorisée.</span>`;
+      }
+    } catch(e) {
+      importReady = false;
+      $("authStatus").innerHTML = `<span class="err">Vérification impossible : ${formatError(e)}</span>`;
+    }
+  } else {
+    importReady = false;
+    $("authStatus").innerHTML = "<small>Pas encore connecté.</small>";
+    $("loginBtn").classList.remove("hidden");
+    $("logoutBtn").classList.add("hidden");
+  }
+  updateImportButton();
+});
+$("loginBtn").addEventListener("click", async () => {
+  try {
+    await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);
+    $("password").value="";
+  } catch(e) { log("Connexion refusée : "+formatError(e),"err"); }
+});
+$("logoutBtn").addEventListener("click", async () => {
+  await signOut(auth);
+  log("Déconnecté.");
+});
+$("backup").addEventListener("change", async e => {
+  backupData=null;
+  $("preview").textContent="";
+  updateImportButton();
+  const file=e.target.files?.[0];
+  if(!file)return;
+  try {
+    const text=await file.text();
+    const parsed=JSON.parse(text);
+    const names=validateData(parsed);
+    backupData=parsed;
+    $("preview").innerHTML=names.map(n=>`<div>${n} : <b>${parsed[n].length}</b></div>`).join("");
+    const photos=parsed.members.filter(m=>m.photo).length;
+    $("preview").innerHTML += `<div>Photos de membres : <b>${photos}</b></div><div>Taille du fichier : <b>${(file.size/1024).toFixed(1)} Ko</b></div>`;
+    log("Fichier valide. Vérification prête. Aucun document n'a encore été importé.","ok");
+  } catch(err) {
+    log("Fichier refusé : "+formatError(err),"err");
+  }
+  updateImportButton();
+});
+$("importBtn").addEventListener("click", async () => {
+  if(!currentUser || !importReady || !backupData)return;
+  const confirmed=confirm("Confirmez-vous l'importation des données V2 dans Firebase ? Les documents seront enregistrés avec leurs anciens identifiants. Ne fermez pas cette page pendant l'opération.");
+  if(!confirmed)return;
+  $("importBtn").disabled=true;
+  const names=["members","contributions","credits","repayments","meetings"];
+  const markerRef=doc(db,"system","migration_v2");
+  try {
+    const marker=await getDoc(markerRef);
+    if(marker.exists() && marker.data().status==="complete") {
+      throw new Error("Une migration V2 est déjà marquée comme terminée. Aucun nouvel import n'a été effectué.");
+    }
+    await setDoc(markerRef,{
+      status:"running",
+      startedAt:serverTimestamp(),
+      startedBy:currentUser.uid,
+      source:"FIKA_GESTION_V2",
+      counts:Object.fromEntries(names.map(n=>[n,backupData[n].length]))
+    },{merge:true});
+    let done=0;
+    const total=names.reduce((s,n)=>s+backupData[n].length,0);
+    for(const name of names) {
+      const items=backupData[name];
+      for(let start=0;start<items.length;start+=400) {
+        const batch=writeBatch(db);
+        for(const item of items.slice(start,start+400)) {
+          const {id,...fields}=item;
+          batch.set(doc(db,name,String(id)),{...fields,id:String(id),legacyId:String(id),migratedFrom:"V2"});
+        }
+        await batch.commit();
+        done += Math.min(400,items.length-start);
+        log(`Importation en cours : ${done}/${total} enregistrements terminés…`);
+      }
+    }
+    await setDoc(markerRef,{
+      status:"complete",
+      completedAt:serverTimestamp(),
+      completedBy:currentUser.uid,
+      counts:Object.fromEntries(names.map(n=>[n,backupData[n].length]))
+    },{merge:true});
+    log("IMPORTATION TERMINÉE.\n\nMembres : "+backupData.members.length+
+      "\nCotisations : "+backupData.contributions.length+
+      "\nCrédits : "+backupData.credits.length+
+      "\nRemboursements : "+backupData.repayments.length+
+      "\nRéunions : "+backupData.meetings.length+
+      "\n\nLes anciens identifiants ont été conservés. Gardez le fichier de sauvegarde V2.","ok");
+    $("importBtn").disabled=true;
+  } catch(e) {
+    log("L'importation n'a pas pu se terminer : "+formatError(e)+
+      "\n\nSi l'état est 'running', vous pouvez recharger la page et relancer le même fichier : les mêmes identifiants seront réutilisés. Ne supprimez pas les données.","err");
+    updateImportButton();
+  }
+});
+</script>
+</body>
+</html>
