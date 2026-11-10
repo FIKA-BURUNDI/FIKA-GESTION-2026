@@ -13,7 +13,7 @@
 <div id="appView" class="hidden">
 <nav id="navigation"><button class="active" data-page="dashboard">Tableau de bord</button><button data-page="members">Membres</button><button data-page="contributions">Cotisations</button><button data-page="credits">Crédits</button><button data-page="repayments">Remboursements</button><button data-page="meetings">Réunions</button><button data-page="reports">Rapports</button><button data-page="settings">Sauvegarde</button></nav>
 <main>
-<section id="dashboard" class="page active"><h2>Tableau de bord</h2><div id="dashboardCards" class="grid"></div><div class="card"><h3>Règles FIKA</h3><p>Activité du lundi au samedi (dimanche exclu). Cotisation manquée : 5 000 FBu.</p><p>Crédit : intérêt simple de 5 % par mois, maximum 3 mois, 26 jours ouvrables par mois. Échéance arrondie au multiple supérieur de 500 FBu.</p><p>Remboursement en retard : amende de 10 % de l'échéance quotidienne manquée, appliquée une seule fois. Réunion : premier jour du mois du lundi au samedi (si le 1er est dimanche, le 2). Retard : 5 000 FBu ; absence : 50 000 FBu.</p></div><div id="migrationInfo" class="notice"></div></section>
+<section id="dashboard" class="page active"><h2>Tableau de bord</h2><div id="dashboardCards" class="grid"></div><div class="card"><h3>Règles FIKA</h3><p>Activité du lundi au samedi (dimanche exclu). Cotisation manquée : 5 000 FBu.</p><p>Crédit : intérêt simple de 5 % par mois, maximum 3 mois, 26 jours ouvrables par mois. Échéance arrondie au multiple supérieur de 500 FBu.</p><p>Remboursement en retard : amende de 10 % de la partie non payée de l'échéance quotidienne, appliquée une seule fois. Réunion : premier jour du mois du lundi au samedi (si le 1er est dimanche, le 2). Retard : 5 000 FBu ; absence : 50 000 FBu.</p></div><div id="migrationInfo" class="notice"></div></section>
 <section id="members" class="page"><h2>Gestion des membres</h2><div class="card president-only"><h3>Ajouter / modifier un membre</h3><form id="memberForm"><input type="hidden" id="memberId"><div class="formgrid"><div><label>Nom complet</label><input id="memberName" required></div><div><label>Téléphone</label><input id="memberPhone"></div><div><label>Adresse</label><input id="memberAddress"></div><div><label>Référence carte ID / passeport</label><input id="memberDocument" placeholder="Référence seulement"></div><div><label>Photo</label><input id="memberPhoto" type="file" accept="image/*"></div></div><button class="primary">Enregistrer</button><button type="button" class="secondary" id="clearMember">Annuler</button></form></div><div class="card"><h3>Liste des membres</h3><div class="tablewrap"><table><thead><tr><th>Nom</th><th>Téléphone</th><th>Cotisations</th><th>Solde crédit</th><th>Actions</th></tr></thead><tbody id="membersTable"></tbody></table></div></div><div id="memberProfile"></div></section>
 <section id="contributions" class="page"><h2>Cotisations</h2><div class="card president-only"><h3>Enregistrer une cotisation</h3><form id="contributionForm"><div class="formgrid"><div><label>Membre</label><select id="contributionMember" required></select></div><div><label>Date</label><input type="date" id="contributionDate" required></div><div><label>Montant versé (FBu)</label><input type="number" id="contributionAmount" min="0" required></div><div><label>Amende (FBu)</label><input type="number" id="contributionFine" min="0" value="0"></div></div><button class="primary">Enregistrer</button></form></div><div class="card"><h3>Suivi des cotisations</h3><div class="formgrid"><div><label>Mois</label><input type="month" id="contributionMonth"></div><div><label>Jusqu'au jour</label><input type="date" id="contributionUntil"></div></div><p id="contributionTotals"></p><div class="tablewrap"><table><thead><tr><th>Date</th><th>Membre</th><th>Montant</th><th>Amende</th><th>Action</th></tr></thead><tbody id="contributionTable"></tbody></table></div></div></section>
 <section id="credits" class="page"><h2>Gestion des crédits</h2><div class="card president-only"><h3>Accorder un crédit</h3><form id="creditForm"><div class="formgrid"><div><label>Membre</label><select id="creditMember" required></select></div><div><label>Date du crédit</label><input type="date" id="creditDate" required></div><div><label>Capital (FBu)</label><input type="number" id="creditPrincipal" min="1" required></div><div><label>Durée</label><select id="creditMonths"><option value="1">1 mois – 26 jours</option><option value="2">2 mois – 52 jours</option><option value="3">3 mois – 78 jours</option></select></div></div><button class="primary">Créer le crédit</button></form></div><div class="card"><h3>Liste des crédits</h3><div class="tablewrap"><table><thead><tr><th>Membre</th><th>Capital</th><th>Total dû</th><th>Échéance/jour</th><th>Durée</th><th>Payé</th><th>Amendes</th><th>Solde</th><th>Actions</th></tr></thead><tbody id="creditsTable"></tbody></table></div></div></section>
@@ -42,7 +42,53 @@ const collections=['members','contributions','credits','repayments','meetings','
 const today=new Date().toISOString().slice(0,10);
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',3200)}
 function member(id){return db.members.find(x=>x.id===id)}function credit(id){return db.credits.find(x=>x.id===id)}function balance(c){return Math.max(0,(Number(c.totalDue)||0)+(Number(c.fines)||0)-(Number(c.paid)||0))}
-function addDays(s,n){let d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}function workingDates(start,count){let a=[],d=start;while(a.length<count){if(new Date(d+'T12:00:00').getDay()!==0)a.push(d);d=addDays(d,1)}return a}function round500(n){return Math.ceil(n/500)*500}
+function addDays(s,n){let d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function workingDates(start,count){let a=[],d=start;while(a.length<count){if(new Date(d+'T12:00:00').getDay()!==0)a.push(d);d=addDays(d,1)}return a}
+function round500(n){return Math.ceil(n/500)*500}
+/*
+ * Répartit les remboursements historiques sur les échéances dans l'ordre chronologique.
+ * Cela permet de calculer l'impayé réel de chaque échéance, y compris les paiements partiels.
+ * Les amendes déjà enregistrées (fineApplied=true) ne sont jamais recalculées.
+ */
+function allocatedPayments(c, beforeDate){
+  const schedule=(c.schedule||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const repayments=db.repayments
+    .filter(r=>r.creditId===c.id && (!beforeDate || String(r.date)<=beforeDate))
+    .slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.id).localeCompare(String(b.id)));
+  const remaining=schedule.map(it=>Math.max(0,Number(it.amount)||0));
+  for(const r of repayments){
+    let amount=Math.max(0,Number(r.amount)||0);
+    for(let i=0;i<schedule.length && amount>0;i++){
+      const used=Math.min(remaining[i],amount);
+      remaining[i]-=used;
+      amount-=used;
+    }
+  }
+  return new Map(schedule.map((it,i)=>[it.date,{due:Math.max(0,Number(it.amount)||0),paid:Math.max(0,(Number(it.amount)||0)-remaining[i]),outstanding:remaining[i]}]));
+}
+function overdueFineForPayment(c,paymentDate){
+  let added=0;
+  const allocations=allocatedPayments(c,paymentDate);
+  const schedule=(c.schedule||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  for(const it of schedule){
+    if(String(it.date)>=paymentDate || it.fineApplied)continue;
+    const info=allocations.get(it.date);
+    const unpaid=info?info.outstanding:Math.max(0,Number(it.amount)||0);
+    if(unpaid>0){
+      const fine=Math.ceil(unpaid*0.10);
+      it.fine=Number(it.fine)||0;
+      it.fine+=fine;
+      it.fineApplied=true;
+      c.fines=(Number(c.fines)||0)+fine;
+      added+=fine;
+    }else{
+      // Échéance déjà couverte par les paiements antérieurs : aucune amende.
+      it.fineApplied=true;
+      it.fine=Number(it.fine)||0;
+    }
+  }
+  return added;
+}
 async function audit(action,detail){if(!currentUser)return;let a={id:uid(),action,detail,actor:currentUser.email||currentUser.uid,actorUid:currentUser.uid,createdAt:new Date().toISOString()};await setDoc(doc(fs,'audit',a.id),a);db.audit.unshift(a)}
 async function loadData(){for(const name of collections){const snap=await getDocs(collection(fs,name));db[name]=snap.docs.map(d=>({id:d.id,...d.data()}))}db.audit.sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));renderAll()}
 async function saveDoc(name,obj){if(!isPresident)throw Error('Seul le Président peut modifier les données.');await setDoc(doc(fs,name,obj.id),obj);let i=db[name].findIndex(x=>x.id===obj.id);if(i<0)db[name].push(obj);else db[name][i]=obj}
@@ -51,7 +97,7 @@ function setRoleUI(){document.querySelectorAll('.president-only').forEach(el=>el
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id))}
 $('navigation').addEventListener('click',e=>{let b=e.target.closest('button[data-page]');if(b)showPage(b.dataset.page)});
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginError').textContent='';try{await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(err){$('loginError').textContent='Connexion impossible : '+err.message}});
-onAuthStateChanged(auth,async user=>{currentUser=user;if(!user){$('loginView').classList.remove('hidden');$('appView').classList.add('hidden');$('userline').textContent='';return}try{let u=await getDoc(doc(fs,'users',user.uid));if(!u.exists()||u.data().active!==true){await signOut(auth);$('loginError').textContent='Compte non autorisé ou désactivé.';return}userRole=u.data().role||'user';isPresident=user.uid===PRESIDENT_UID&&userRole==='president';$('loginView').classList.add('hidden');$('appView').classList.remove('hidden');setRoleUI();await loadData();$('migrationInfo').textContent='Connecté à Firebase. Données synchronisées depuis Firestore. Les membres et historiques sont visibles selon les autorisations du compte.'}catch(err){$('loginError').textContent='Erreur de connexion/chargement : '+(err?.message||String(err));toast('Erreur de chargement : '+(err?.message||String(err)))}});
+onAuthStateChanged(auth,async user=>{currentUser=user;if(!user){$('loginView').classList.remove('hidden');$('appView').classList.add('hidden');$('userline').textContent='';return}try{let u=await getDoc(doc(fs,'users',user.uid));if(!u.exists()||u.data().active!==true){await signOut(auth);$('loginError').textContent='Compte non autorisé ou désactivé.';return}userRole=u.data().role||'user';isPresident=user.uid===PRESIDENT_UID&&userRole==='president';$('loginView').classList.add('hidden');$('appView').classList.remove('hidden');setRoleUI();await loadData();$('migrationInfo').textContent='Connecté à Firebase. Données synchronisées depuis Firestore. Les membres et historiques sont visibles selon les autorisations du compte.'}catch(err){toast('Erreur de chargement : '+err.message)}});
 $('logout').onclick=()=>signOut(auth);$('refreshData').onclick=()=>loadData().then(()=>toast('Données actualisées.')).catch(e=>toast(e.message));
 function fillMembers(id,all=false){let el=$(id),old=el.value;el.innerHTML=(all?'<option value="all">Tous les membres</option>':'<option value="">Choisir un membre</option>')+db.members.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');if([...el.options].some(o=>o.value===old))el.value=old}
 function renderDashboard(){let con=db.contributions.reduce((s,x)=>s+(+x.amount||0),0),principal=db.credits.reduce((s,x)=>s+(+x.principal||0),0),paid=db.repayments.reduce((s,x)=>s+(+x.amount||0),0),bal=db.credits.reduce((s,x)=>s+balance(x),0),fines=db.contributions.reduce((s,x)=>s+(+x.fine||0),0)+db.credits.reduce((s,x)=>s+(+x.fines||0),0)+db.meetings.reduce((s,x)=>s+(+x.fine||0),0);let items=[['Membres',db.members.length],['Cotisations cumulées',money(con)],['Crédits accordés',money(principal)],['Remboursements',money(paid)],['Solde des crédits',money(bal)],['Amendes enregistrées',money(fines)]];$('dashboardCards').innerHTML=items.map(x=>`<div class="card"><div class="muted">${x[0]}</div><div class="metric">${x[1]}</div></div>`).join('')}
@@ -65,67 +111,25 @@ function renderContributions(){let month=$('contributionMonth').value,until=$('c
 $('contributionTable').addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;let x=db.contributions.find(v=>v.id===(b.dataset.editCon||b.dataset.deleteCon));if(!x)return;if(b.dataset.editCon){let date=prompt('Date (AAAA-MM-JJ) :',x.date||'');if(date===null)return;let amount=prompt('Montant versé (FBu) :',String(x.amount||0));if(amount===null)return;let fine=prompt('Amende (FBu) :',String(x.fine||0));if(fine===null)return;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(+amount)||+amount<0||!Number.isFinite(+fine)||+fine<0)return toast('Valeurs invalides.');try{x.date=date;x.amount=+amount;x.fine=+fine;await saveDoc('contributions',x);await audit('MODIFICATION COTISATION',member(x.memberId)?.name+' : '+money(x.amount));renderAll();toast('Cotisation modifiée.')}catch(err){toast(err.message)}return}if(b.dataset.deleteCon&&confirm('Supprimer cette cotisation ?'))try{await removeDoc('contributions',x.id);renderAll();toast('Cotisation supprimée.')}catch(err){toast(err.message)}});
 async function changeFine(type,id){if(!isPresident)return toast('Action réservée au Président.');let name=type==='contribution'?'contributions':type==='meeting'?'meetings':'credits',obj=db[name].find(x=>x.id===id);if(!obj)return;let old=type==='credit'?(+obj.fines||0):(+obj.fine||0),v=prompt('Nouvelle amende en FBu (0 pour annuler) :',String(old));if(v===null)return;let amount=Number(v);if(!Number.isFinite(amount)||amount<0)return toast('Montant invalide.');if(type==='credit')obj.fines=amount;else obj.fine=amount;try{await saveDoc(name,obj);await audit('MODIFICATION AMENDE',type+' '+id+' : '+money(old)+' → '+money(amount));renderAll();toast('Amende modifiée.')}catch(err){toast(err.message)}}
 document.addEventListener('click',e=>{let b=e.target.closest('[data-edit-fine]');if(b){let [type,id]=b.dataset.editFine.split(':');changeFine(type,id)}});$('contributionMonth').onchange=renderContributions;$('contributionUntil').onchange=renderContributions;
-$('creditForm').addEventListener('submit',async e=>{e.preventDefault();try{let principal=+$('creditPrincipal').value,months=+$('creditMonths').value,days=26*months,totalDue=Math.round(principal*(1+.05*months)),daily=round500(totalDue/days),dates=workingDates($('creditDate').value,days),schedule=dates.map((date,i)=>({date,amount:i===days-1?Math.max(0,totalDue-daily*(days-1)):daily,fineApplied:false,fine:0})),c={id:uid(),memberId:$('creditMember').value,date:$('creditDate').value,principal,months,days,totalDue,daily,schedule,paid:0,fines:0};await saveDoc('credits',c);await audit('NOUVEAU CRÉDIT',member(c.memberId)?.name+' : '+money(principal));e.target.reset();$('creditDate').value=today;renderAll();toast('Crédit créé.')}catch(err){toast(err.message)}});
+$('creditForm').addEventListener('submit',async e=>{e.preventDefault();try{let principal=+$('creditPrincipal').value,months=+$('creditMonths').value,days=26*months,totalDue=Math.round(principal*(1+.05*months)),daily=round500(totalDue/days),dates=workingDates(addDays($('creditDate').value,1),days),schedule=dates.map((date,i)=>({date,amount:i===days-1?Math.max(0,totalDue-daily*(days-1)):daily,fineApplied:false,fine:0})),c={id:uid(),memberId:$('creditMember').value,date:$('creditDate').value,principal,months,days,totalDue,daily,schedule,paid:0,fines:0};await saveDoc('credits',c);await audit('NOUVEAU CRÉDIT',member(c.memberId)?.name+' : '+money(principal));e.target.reset();$('creditDate').value=today;renderAll();toast('Crédit créé. Première échéance : '+dates[0])}catch(err){toast(err.message)}});
 function renderCredits(){$('creditsTable').innerHTML=db.credits.map(c=>`<tr><td>${esc(member(c.memberId)?.name||'')}</td><td>${money(c.principal)}</td><td>${money(c.totalDue)}</td><td>${money(c.daily)}</td><td>${c.months} mois / ${c.days} jours</td><td>${money(c.paid)}</td><td>${money(c.fines)} ${isPresident?`<button class="secondary" data-edit-fine="credit:${esc(c.id)}">Modifier amende</button>`:''}</td><td>${money(balance(c))}</td><td>${isPresident?`<div class="actions"><button class="secondary" data-edit-credit="${esc(c.id)}">Modifier crédit</button><button class="danger" data-delete-credit="${esc(c.id)}">Supprimer</button></div>`:'—'}</td></tr>`).join('');$('repaymentCredit').innerHTML='<option value="">Choisir un crédit</option>'+db.credits.filter(c=>balance(c)>0).map(c=>`<option value="${esc(c.id)}">${esc(member(c.memberId)?.name||'')} — solde ${money(balance(c))}</option>`).join('')}
-$('creditsTable').addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;let c=credit(b.dataset.editCredit||b.dataset.deleteCredit);if(!c)return;if(b.dataset.editCredit){if(db.repayments.some(r=>r.creditId===c.id)){toast('Ce crédit a déjà des remboursements. Modifie seulement son amende pour préserver les calculs.');return}let date=prompt('Date du crédit (AAAA-MM-JJ) :',c.date||'');if(date===null)return;let principal=prompt('Capital (FBu) :',String(c.principal));if(principal===null)return;let months=prompt('Durée en mois (1, 2 ou 3) :',String(c.months));if(months===null)return;principal=Number(principal);months=Number(months);if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(principal)||principal<=0||![1,2,3].includes(months))return toast('Valeurs invalides.');let days=26*months,totalDue=Math.round(principal*(1+.05*months)),daily=round500(totalDue/days),dates=workingDates(date,days);c.date=date;c.principal=principal;c.months=months;c.days=days;c.totalDue=totalDue;c.daily=daily;c.schedule=dates.map((d,i)=>({date:d,amount:i===days-1?Math.max(0,totalDue-daily*(days-1)):daily,fineApplied:false,fine:0}));try{await saveDoc('credits',c);await audit('MODIFICATION CRÉDIT',member(c.memberId)?.name+' : '+money(principal));renderAll();toast('Crédit modifié.')}catch(err){toast(err.message)}return}if(b.dataset.deleteCredit){if(db.repayments.some(r=>r.creditId===c.id)){toast('Impossible de supprimer : ce crédit possède déjà des remboursements.');return}if(confirm('Supprimer ce crédit ?'))try{await removeDoc('credits',c.id);renderAll();toast('Crédit supprimé.')}catch(err){toast(err.message)}}});
+$('creditsTable').addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;let c=credit(b.dataset.editCredit||b.dataset.deleteCredit);if(!c)return;if(b.dataset.editCredit){if(db.repayments.some(r=>r.creditId===c.id)){toast('Ce crédit a déjà des remboursements. Modifie seulement son amende pour préserver les calculs.');return}let date=prompt('Date du crédit (AAAA-MM-JJ) :',c.date||'');if(date===null)return;let principal=prompt('Capital (FBu) :',String(c.principal));if(principal===null)return;let months=prompt('Durée en mois (1, 2 ou 3) :',String(c.months));if(months===null)return;principal=Number(principal);months=Number(months);if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(principal)||principal<=0||![1,2,3].includes(months))return toast('Valeurs invalides.');let days=26*months,totalDue=Math.round(principal*(1+.05*months)),daily=round500(totalDue/days),dates=workingDates(addDays(date,1),days);c.date=date;c.principal=principal;c.months=months;c.days=days;c.totalDue=totalDue;c.daily=daily;c.schedule=dates.map((d,i)=>({date:d,amount:i===days-1?Math.max(0,totalDue-daily*(days-1)):daily,fineApplied:false,fine:0}));try{await saveDoc('credits',c);await audit('MODIFICATION CRÉDIT',member(c.memberId)?.name+' : '+money(principal));renderAll();toast('Crédit modifié. Première échéance : '+dates[0])}catch(err){toast(err.message)}return}if(b.dataset.deleteCredit){if(db.repayments.some(r=>r.creditId===c.id)){toast('Impossible de supprimer : ce crédit possède déjà des remboursements.');return}if(confirm('Supprimer ce crédit ?'))try{await removeDoc('credits',c.id);renderAll();toast('Crédit supprimé.')}catch(err){toast(err.message)}}});
 $('repaymentCredit').onchange=()=>{let c=credit($('repaymentCredit').value);$('creditDueInfo').textContent=c?`Échéance/jour : ${money(c.daily)} · Déjà payé : ${money(c.paid)} · Amendes : ${money(c.fines)} · Solde : ${money(balance(c))}`:''};
-// Calcule le montant déjà affecté à chaque échéance à partir des paiements
-// réellement enregistrés au plus tard à la date de cette échéance.
-function paidForInstallmentByDate(c, installmentIndex, cutoffDate) {
-  const schedule=(c.schedule||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  const payments=db.repayments
-    .filter(r=>r.creditId===c.id && String(r.date||'')<=cutoffDate)
-    .slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  let available=payments.reduce((sum,r)=>sum+(Number(r.amount)||0),0);
-  for(let i=0;i<schedule.length;i++) {
-    const due=Math.max(0,Number(schedule[i].amount)||0);
-    const allocated=Math.min(due,available);
-    if(i===installmentIndex) return allocated;
-    available-=allocated;
-  }
-  return 0;
-}
-
-$('repaymentForm').addEventListener('submit',async e=>{
-  e.preventDefault();
-  try {
-    const c=credit($('repaymentCredit').value);
-    if(!c) throw Error('Choisis un crédit.');
-    const date=$('repaymentDate').value;
-    const amount=Number($('repaymentAmount').value);
-    if(!date || !Number.isFinite(amount) || amount<=0) throw Error('Vérifie la date et le montant du paiement.');
-
-    let newFine=0;
-    const schedule=(c.schedule||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-    schedule.forEach((it,index)=>{
-      // Une échéance n'est en retard qu'après la fin de sa date limite.
-      // Le paiement du jour même n'entraîne donc jamais d'amende ce jour-là.
-      if(String(it.date)<date && !it.fineApplied) {
-        const paidByDueDate=paidForInstallmentByDate(c,index,String(it.date));
-        const due=Math.max(0,Number(it.amount)||0);
-        const unpaid=Math.max(0,due-paidByDueDate);
-        const fine=unpaid>0?Math.ceil(unpaid*0.10):0;
-        it.fine=fine;
-        it.fineApplied=true;
-        c.fines=(Number(c.fines)||0)+fine;
-        newFine+=fine;
-      }
-    });
-
-    c.schedule=schedule;
-    c.paid=(Number(c.paid)||0)+amount;
-    const r={id:uid(),creditId:c.id,memberId:c.memberId,date,amount,fine:newFine,balance:balance(c)};
-    await saveDoc('credits',c);
-    await saveDoc('repayments',r);
-    await audit('REMBOURSEMENT',member(c.memberId)?.name+' : '+money(amount)+' ; amende '+money(newFine));
-    e.target.reset();
-    $('repaymentDate').value=today;
-    renderAll();
-    toast('Remboursement enregistré. Amende ajoutée : '+money(newFine));
-  } catch(err) {
-    toast('Erreur : '+(err?.message||String(err)));
-  }
-});
+$('repaymentForm').addEventListener('submit',async e=>{e.preventDefault();try{
+  let c=credit($('repaymentCredit').value);if(!c)throw Error('Choisis un crédit.');
+  let date=$('repaymentDate').value,amount=+$('repaymentAmount').value;
+  if(!date||!Number.isFinite(amount)||amount<=0)throw Error('Vérifie la date et le montant du paiement.');
+  if(date>today)throw Error('La date du paiement ne peut pas être dans le futur.');
+  // On calcule l'impayé de chaque échéance avec les remboursements déjà enregistrés.
+  // Les amendes historiques déjà marquées restent intactes; aucune amende n'est doublée.
+  let newFine=overdueFineForPayment(c,date);
+  c.paid=(+c.paid||0)+amount;
+  let r={id:uid(),creditId:c.id,memberId:c.memberId,date,amount,fine:newFine,balance:balance(c)};
+  await saveDoc('credits',c);await saveDoc('repayments',r);
+  await audit('REMBOURSEMENT',member(c.memberId)?.name+' : '+money(amount)+' ; amende '+money(newFine));
+  e.target.reset();$('repaymentDate').value=today;renderAll();
+  toast('Remboursement enregistré. Amende ajoutée : '+money(newFine));
+}catch(err){toast(err.message)}});
 function renderRepayments(){$('repaymentsTable').innerHTML=db.repayments.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(member(x.memberId)?.name||'')}</td><td>${money(x.amount)}</td><td>${money(x.fine)}</td><td>${money(x.balance)}</td><td>${isPresident?`<div class="actions"><button class="secondary" data-edit-repayment="${esc(x.id)}">Modifier</button><button class="danger" data-delete-repayment="${esc(x.id)}">Supprimer</button></div>`:'—'}</td></tr>`).join('')}
 $('repaymentsTable').addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;let r=db.repayments.find(v=>v.id===(b.dataset.editRepayment||b.dataset.deleteRepayment));if(!r)return;let c=credit(r.creditId);if(!c)return toast('Crédit associé introuvable.');if(b.dataset.editRepayment){let date=prompt('Date du paiement (AAAA-MM-JJ) :',r.date||'');if(date===null)return;let amount=prompt('Montant versé (FBu) :',String(r.amount||0));if(amount===null)return;amount=Number(amount);if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(amount)||amount<=0)return toast('Valeurs invalides.');try{c.paid=Math.max(0,(+c.paid||0)-(+r.amount||0)+amount);r.date=date;r.amount=amount;r.balance=balance(c);await saveDoc('credits',c);await saveDoc('repayments',r);await audit('MODIFICATION REMBOURSEMENT',member(r.memberId)?.name+' : '+money(amount));renderAll();toast('Remboursement modifié. L’amende historique est conservée.')}catch(err){toast(err.message)}return}if(b.dataset.deleteRepayment&&confirm('Supprimer ce remboursement ? Le montant sera retiré du total payé. Les amendes déjà appliquées resteront dans l’historique du crédit.'))try{c.paid=Math.max(0,(+c.paid||0)-(+r.amount||0));await saveDoc('credits',c);await removeDoc('repayments',r.id);await audit('SUPPRESSION REMBOURSEMENT',member(r.memberId)?.name+' : '+money(r.amount));renderAll();toast('Remboursement supprimé.')}catch(err){toast(err.message)}});
 $('meetingForm').addEventListener('submit',async e=>{e.preventDefault();try{let status=$('meetingStatus').value,fine=status==='late'?5000:status==='absent'?50000:0,x={id:uid(),memberId:$('meetingMember').value,date:$('meetingDate').value,status,fine};let duplicate=db.meetings.some(m=>m.memberId===x.memberId&&m.date.slice(0,7)===x.date.slice(0,7));if(duplicate)throw Error('La présence de ce membre est déjà enregistrée pour ce mois.');await saveDoc('meetings',x);await audit('RÉUNION',member(x.memberId)?.name+' : '+status);e.target.reset();$('meetingDate').value=today;renderAll();toast('Présence enregistrée.')}catch(err){toast(err.message)}});
